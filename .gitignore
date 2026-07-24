@@ -1,0 +1,11 @@
+*.ipynb
+*.nc
+*.xlsx
+ipynb_checkpoints/
+shapefiles/
+gate_averages/
+*.csv
+*.tab
+__pycache__/
+.ipynb_checkpoints/
+*.h5
