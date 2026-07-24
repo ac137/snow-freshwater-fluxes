@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use or extend the code in this repository, please cite it as below."
+authors:
+- family-names: "Cabaj"
+  given-names: "Alex"
+  orcid: "https://orcid.org/0000-0002-1543-3867"
+title: "Snow freshwater flux calculation scripts"
+version: 1.0.0
+date-released: 2026-07-24
+url: "https://github.com/ac137/snow-freshwater-flux"
