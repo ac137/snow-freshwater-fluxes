@@ -111,7 +111,7 @@ Regrid sea ice age to the respective grid for each snow product grid used: regri
 - Uses values stored in snow_salinity_by_height_for_processing.csv based on Nandan et al. (2017)
 
 ### Calculate sea ice salinity
-- Ice-age-dependent sea ice density based on Landy et al (2022), salinity based on Vancoppenolle et al (2005)
+- Ice-age-dependent sea ice density based on Landy et al. (2022), salinity based on Vancoppenolle et al. (2005)
 - Script to run: calc_ice_density_salinity_gate_avg.ipynb
 - Creates files monthly_sea_ice_density_from_age.csv, monthly_sea_ice_salinity_from_age.csv
 
