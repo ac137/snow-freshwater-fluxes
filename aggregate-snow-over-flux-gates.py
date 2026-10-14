@@ -42,10 +42,11 @@ variable_list = ['snow_density', 'myi_fraction', 'snow_depth', 'snow_salinity']
 # dataset_name = 'smlg'
 # dataset_name = 'amsr2'
 # dataset_name = 'legos_sam'
-dataset_name = 's3'
+# dataset_name = 's3'
+dataset_name = 'smlg-m2'
 
 # is the data monthly; for aggregation purposes
-data_is_monthly = {'nesosim':False, 'smlg':False, 'amsr2':False,'legos_sam':True,'s3':True}
+data_is_monthly = {'nesosim':False, 'smlg':False, 'amsr2':False,'legos_sam':True,'s3':True, 'smlg-m2':False}
 
 # %%
 clipped_data_dict = sc.load_clipped_data_to_dict(dataset_name, gate_list, variable_list)
@@ -124,7 +125,7 @@ if data_is_monthly[dataset_name]:
     std_to_save = snow_depth_gate_std_monthly
 else:
     # if data is daily, also propagate in the time uncertainty
-    std_to_save = std_errorprop
+    std_to_save = std_errprop
 
 
 

@@ -42,9 +42,9 @@ import shapefile_clipping_helpers as sc
 # load rioxarray data
 
 # year_current = 2019
-# path_current = './{}/N{}01*.tif'.format(year_current,year_current)
+# path_current = '../other_data/li_amsr2_pmw/{}/N{}01*.tif'.format(year_current,year_current)
 
-# path_current = './{}/N{}0101_LSTM_hs.tif'.format(year_current,year_current)
+# path_current = '../other_data/li_amsr2_pmw/{}/N{}0101_LSTM_hs.tif'.format(year_current,year_current)
 
 # %%
 
@@ -60,8 +60,7 @@ data_list = []
 for year_current in range(2012, 2021):
 # for year_current in range(2018, 2019): # for plotting single files only
     print(year_current)
-    # directory where data is stored; change as needed
-    data_dir = '.'
+    data_dir = '../other_data/li_amsr2_pmw/'
     # year_current = 2019
     
     year_path = os.path.join(data_dir,str(year_current))
@@ -77,8 +76,8 @@ for year_current in range(2012, 2021):
         data_list.append(pmw_data)
 
 # %%
-# test loading a single data file for reference; adjust path as needed
-path_single = './2018/N20181201_LSTM_hs.tif'
+# test loading a single data file for reference
+path_single = '../other_data/li_amsr2_pmw/2018/N20181201_LSTM_hs.tif'
 single_data_file = rio.open_rasterio(path_single).assign_coords({'date':'2018-12-01'}).expand_dims({'date': 1})
 
 # %%
@@ -163,13 +162,13 @@ pmw_data_1year_ds = pmw_data_1year.to_dataset(name='snow_depth') # create datase
 
 # %%
 # save the consolidated data as a netcdf
-sc.save_xr_comp(pmw_data_1year_ds, './li_amsr2_pmw/pmw_snow_depth_2012_to_2020.nc')
+sc.save_xr_comp(pmw_data_1year_ds, '../other_data/li_amsr2_pmw/pmw_snow_depth_2012_to_2020.nc')
 
 
 # %%
-# load nesosim & smlg data for grid setup; adjust file paths as needed
+# load nesosim & smlg data for grid setup
 
-nesosim_data = xr.open_dataset('../NESOSIM/output/100km/ERA5CSscaledsfERA5windsNSIDCv4driftsCDRsicrhovariable_IC2_DYN1_WP1_LL1_AL1_WPF2.0504155592128743e-06_WPT5_LLF4.0059442776163867e-07-100kmv11/final/NESOSIMv11_01092019-31082020.nc')
+nesosim_data = xr.open_dataset('../snow_modelling/NESOSIM/output/100km/ERA5CSscaledsfERA5windsNSIDCv4driftsCDRsicrhovariable_IC2_DYN1_WP1_LL1_AL1_WPF2.0504155592128743e-06_WPT5_LLF4.0059442776163867e-07-100kmv11/final/NESOSIMv11_01092019-31082020.nc')
 sm_data = xr.open_dataset('../SnowModel_data/SM_snod_ERA5_01Aug1980-31Jul2021_v01.nc')
 
 
@@ -238,7 +237,7 @@ plt.show()
 
 # %%
 # test loading data
-# data_load_test = xr.open_dataset('./li_amsr2_pmw/pmw_snow_depth_year_{}.nc'.format(year_current))
+# data_load_test = xr.open_dataset('../other_data/li_amsr2_pmw/pmw_snow_depth_year_{}.nc'.format(year_current))
 # data_load_test
 
 # %%

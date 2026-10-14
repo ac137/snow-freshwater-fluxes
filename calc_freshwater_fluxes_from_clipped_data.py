@@ -39,7 +39,14 @@ variable_list = ['snow_density', 'myi_fraction', 'snow_depth', 'snow_salinity']
 # dataset_name = 'legos_sam'
 dataset_name = 's3'
 # dataset_name = 'amsr2'
+# dataset_name = 'smlg-m2'
 
+
+# USE_FIXED_DENSITY = True # if True, use prescribed single density
+# USE_ZERO_SALINITY = False # if True, assume zero salinity
+
+# USE_FIXED_DENSITY = False # if True, use prescribed single density
+# USE_ZERO_SALINITY = True # if True, assume zero salinity
 
 USE_FIXED_DENSITY = False # if True, use prescribed single density
 USE_ZERO_SALINITY = False # if True, assume zero salinity

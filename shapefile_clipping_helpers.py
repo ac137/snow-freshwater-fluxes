@@ -51,6 +51,12 @@ def add_crs_and_dates_nesosim(da):
     da['day'] = pd.to_datetime(da['day'],format='%Y%m%d')
     return da
 
+def add_crs_nesosim(da):
+	'''add crs to nesosim; assuming dates are already formatted correctly'''
+	da.rio.set_spatial_dims('x', 'y')
+	da.rio.write_crs("epsg:3413", inplace=True)
+	return da
+
 def add_crs_snowmodel(da):
     '''add crs to snowmodel-lg data'''
     da.rio.set_spatial_dims('x', 'y')

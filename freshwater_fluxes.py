@@ -20,6 +20,7 @@
 ## and calculating associated aggregate statistics
 ## uses output from calc_freshwater_fluxes_from_clipped_data.ipynb 
 ## and aggregate-snow-flux-over-gates.ipynb
+## developed by Alex Cabaj (alex.cabaj@ec.gc.ca)
 ##
 ## .py file generated using jupytext
 ##
@@ -63,8 +64,20 @@ fram_ice_flux_data = ff.load_and_preprocess_ice_flux_data('fram-strait-ice-fluxe
 davis_ice_flux_data = ff.load_and_preprocess_ice_flux_data('davis-strait-ice-fluxes-v2.csv')
 
 # %%
+# sea ice density (varies based on sea ice age)
+sea_ice_density_data = pd.read_csv('monthly_sea_ice_density_from_age.csv',header=[0,1],index_col=0)
+sea_ice_density_data.index = pd.to_datetime(sea_ice_density_data.index)
+
+sea_ice_salinity_data = pd.read_csv('monthly_sea_ice_salinity_from_age.csv',header=[0,1],index_col=0)
+sea_ice_salinity_data.index = pd.to_datetime(sea_ice_salinity_data.index)
+
+salinity_fram = sea_ice_salinity_data['Fram']['sea_ice_salinity'].loc['2016-10':]
+salinity_davis = sea_ice_salinity_data['Davis']['sea_ice_salinity'].loc['2016-10':'2022-04']
+
+# %%
 # datasets to load, data names for plots, index names
-file_dataset_list = ['nesosim','smlg','amsr2','legos_sam', 's3']
+# smlg driven by merra-2
+file_dataset_list = ['nesosim','smlg-m2','amsr2','legos_sam', 's3']
 data_name_list = ['NESOSIM','SnowModel-LG','5VLSTM','LEGOS', 'NaRRS']
 gate_name_list = ['Fram','Davis']
 date_index_name = ['day','time','date','time','time']
@@ -88,15 +101,25 @@ if USE_ZERO_SAL:
 # %%
 # calculate freshwater volume fluxes by gate
 
-davis_freshwater_volume_flux = ff.calculate_ice_freshwater_flux(davis_ice_flux_data['Volume Flux']).to_frame(ice_fw_name).loc[:final_date]
-fram_freshwater_volume_flux = ff.calculate_ice_freshwater_flux(fram_ice_flux_data['VF']).to_frame(ice_fw_name).loc[:final_date]
+
+davis_freshwater_volume_flux = ff.calculate_ice_freshwater_flux(davis_ice_flux_data['Volume Flux'],
+                                                                dens_ice = sea_ice_density_data['Davis']['sea_ice_density'].loc['2016-10':'2022-04'],
+                                                               sal_ice = salinity_davis).to_frame(ice_fw_name).loc[:final_date]
+
+davis_freshwater_volume_flux.loc['2017-11','NaRRS'] = np.nan # zero out due to lack of sample points
+
+fram_freshwater_volume_flux = ff.calculate_ice_freshwater_flux(fram_ice_flux_data['VF'],
+                                                               dens_ice = sea_ice_density_data['Fram']['sea_ice_density'].loc['2016-10':],
+                                                              sal_ice = salinity_fram).to_frame(ice_fw_name).loc[:final_date]
 
 ff.calc_snow_volume_flux(davis_freshwater_volume_flux,snow_freshwater_height_dict['Davis'],davis_ice_flux_data['Area Flux'])
 ff.calc_snow_volume_flux(fram_freshwater_volume_flux,snow_freshwater_height_dict['Fram'],fram_ice_flux_data['IAF'])
 
-davis_freshwater_volume_flux *= -1 # convert to make direction of flux consistent; positive values indicate southward export
+davis_freshwater_volume_flux *= -1 # convert because otherwise the data is oriented wrong
 
-
+# %%
+davis_freshwater_volume_flux.loc['2017-11','NaRRS'] = np.nan # insufficient samples; zero this out
+davis_freshwater_volume_flux = davis_freshwater_volume_flux[fram_freshwater_volume_flux.columns]
 
 # %%
 # create a dataframe for just volume and area fluxes
@@ -170,6 +193,10 @@ gate_snow_depth_std = pd.concat(gate_snow_depth_err, axis=1).swaplevel(axis=1)[l
 
 
 # %%
+gate_snow_depths.loc['2017-11',('Davis','NaRRS')] = np.nan # zero out due to relative lack of data
+
+
+# %%
 # winter flux annual (winter-season) percentages and associated error
 fram_annual_flux_percent = ff.calc_percent(winter_flux_totals['Fram'][data_name_list],winter_flux_totals.loc[:,('Fram',ice_fw_name)])
 davis_annual_flux_percent = ff.calc_percent(winter_flux_totals['Davis'][data_name_list],winter_flux_totals.loc[:,('Davis',ice_fw_name)])
@@ -178,6 +205,15 @@ fram_annual_flux_percent_sigma, davis_annual_flux_percent_sigma = ff.percent_err
                                                                                        gate_name_list, data_name_list, ice_fw_name)
 
 
+
+# %%
+# sea ice volume flux uncertainties derived from SIT uncert
+davis_ice_flux_uncert = (davis_ice_flux_data['Volume Flux']*davis_ice_flux_data['SIT_sigma']/davis_ice_flux_data['SIT']).abs()
+fram_ice_flux_uncert = (fram_ice_flux_data['VF']*fram_ice_flux_data['SIT-sigma']/fram_ice_flux_data['SIT']).abs()
+
+# sea ice fwf uncert
+davis_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(davis_ice_flux_uncert)
+fram_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(fram_ice_flux_uncert)
 
 # %%
 # trend calculations (not used in manuscript since no snow fwf trends present)
@@ -193,6 +229,9 @@ multiproduct_snow_fwf = fw_fluxes_all.loc[:,(slice(None),data_name_list)].groupb
 # trend in monthly snow multi-product freshwater flux
 # trend_df_monthly_snowfwf = ff.trend_df_for_all_columns_in_df(multiproduct_snow_fwf)
 
+
+# %%
+winter_flux_totals#.loc['2016']
 
 # %%
 # multiproduct mean time series
@@ -239,6 +278,15 @@ def snowfwf_boxplot_from_fluxes(flux_df, gate, ax):
         color=line_colours[-2],
         order=months_ordered
     )
+    sb.stripplot(
+        data=vals_for_plot,
+        x='Month',
+        y='Snow freshwater flux',ax=ax,
+        color='#6C6C6C',
+        order=months_ordered,
+        jitter=False,
+        alpha=0.4
+    )
     return vals_for_plot
 
 # helper function for adding axis letter labels to 4-panel plots
@@ -257,23 +305,46 @@ def add_ax_letter_labels(ax, text_xpos=0.05, text_ypos = 0.92, text_fontsize=11,
             verticalalignment='bottom', horizontalalignment='right',
             transform=ax[1,1].transAxes, fontsize=text_fontsize)
 
+def add_asterisk_where_zero(ax_current):
+    '''add asterisks/bullets/other marker for patches that have zero value on bar plot'''
+    for p in ax_current.patches:
+        # print(p.get_height())
+        if p.get_height()==0.0:
+            # print(p)
+            ax_current.annotate('•', (p.get_x(), p.get_height() * 1.005),color=p.get_facecolor(),weight='bold')
+
+
+# %%
+mean_fram_snow = gate_snow_depths['Fram'].mean(axis=1)
+std_fram_snow = gate_snow_depths['Fram'].std(axis=1)
+mean_davis_snow = gate_snow_depths['Davis'].mean(axis=1)
+std_davis_snow = gate_snow_depths['Davis'].std(axis=1)
 
 # %%
 # figure 1 b/c: snow thickness over gates time series
 
+# figure 1 b/c: snow thickness over gates time series
+alpha_shading = 0.5
 fig,ax = plt.subplots(2,1,figsize=(9,5),dpi=300,sharex=True) # for paper
 # fig,ax = plt.subplots(2,1,figsize=(8,8),dpi=300,sharex=True) # for presentation
 
-gate_snow_depths['Fram'].plot(ax=ax[0],style='.-',color=line_colours)
-# fram_snow_mean_multiproduct.plot(ax=ax[0],style='.-',label='multiproduct',color='black')
-
-ff.fill_between_err_df(gate_snow_depths['Fram'], gate_snow_depth_std['Fram'],ax[0],color=line_colours,alpha=0.1)
+mean_fram_snow.plot(color=line_colours[5],ax=ax[0])
 
 
-# plt.legend()
+gate_snow_depths['Fram'].plot(ax=ax[0],style='.-',color=line_colours,zorder=4)
+
+
+ax[0].fill_between(gate_snow_depths['Fram'].index, mean_fram_snow - std_fram_snow, mean_fram_snow + std_fram_snow,
+                  color = line_colours[5],alpha=alpha_shading,zorder=-1)
+
+mean_davis_snow.plot(color=line_colours[5],ax=ax[1])
+
+
 gate_snow_depths['Davis'].plot(ax=ax[1],style='.-',color=line_colours)
-# davis_snow_mean_multiproduct.plot(ax=ax[1],style='.-',label='multiproduct',color='black')
-ff.fill_between_err_df(gate_snow_depths['Davis'], gate_snow_depth_std['Davis'],ax[1],color=line_colours,alpha=0.1)
+
+ax[1].fill_between(gate_snow_depths['Davis'].index, mean_davis_snow - std_davis_snow, mean_davis_snow + std_davis_snow,
+                  color = line_colours[5],alpha=alpha_shading,zorder=-1)
+
 
 ax[0].set_ylabel('Fram gate-averaged\nsnow depth (m)')
 ax[1].set_ylabel('Davis gate-averaged\nsnow depth (m)')
@@ -288,13 +359,13 @@ ax[1].text(text_xpos, text_ypos, 'c)',
         transform=ax[1].transAxes, fontsize=text_fontsize)
 
 ax[1].get_legend().remove()
-ax[0].legend(ncol=3)
+
+ax[0].legend(ncol=3,loc=(0.3,0.75))#,loc='upper center')
 # ax[0].legend(ncol=2) # for presentation
 
-# print()
+
 x0,x1 = ax[0].get_xlim()
 ax[0].set_xlim(x0-1,x1+1)
-# ax[1].set_xlim(559,628)
 plt.tight_layout()
 plt.show()
 
@@ -317,7 +388,7 @@ ax4.set_ylabel('Fram Strait monthly snow\nfreshwater volume flux (km$^3$)', colo
 # fram freshwater snow volume flux monthly
 plot_df = fram_freshwater_volume_flux.loc[start_date:end_date,data_name_list]
 plot_df.plot(style=line_style,ax=ax4,color=line_colours)
-ff.fill_between_err_df(plot_df, fram_flux_uncert_df.loc[start_date:end_date],ax4,color=line_colours)
+# ff.fill_between_err_df(plot_df, fram_flux_uncert_df.loc[start_date:end_date],ax4,color=line_colours)
 
 ax[0,0].legend(loc=(0.11,0.65),ncol=2)
 lim0, lim1 = ax4.get_ylim()
@@ -329,7 +400,7 @@ ax2.set_ylabel('Davis Strait monthly snow\nfreshwater volume flux (km$^3$)', col
 
 plot_df = davis_freshwater_volume_flux.loc[start_date:end_date,data_name_list]
 plot_df.plot(style=line_style,ax=ax2,color=line_colours,legend=None)
-ff.fill_between_err_df(plot_df, davis_flux_uncert_df.loc[start_date:end_date],ax2,color=line_colours)
+# ff.fill_between_err_df(plot_df, davis_flux_uncert_df.loc[start_date:end_date],ax2,color=line_colours)
 
 
 # adjust snow volume flux axes for davis
@@ -395,7 +466,7 @@ plt.show()
 
 # %%
 ############## figure 3: winter season snow fluxes
-add_multiyear_totals_to_fig=False # toggle to include multiyear totals
+add_multiyear_totals_to_fig=False
 
 line_alpha=0.6
 
@@ -418,6 +489,9 @@ else:
 plot_df.plot.bar(color=line_colours,ax=ax[0,0],yerr=err_df)
 
 
+
+# winter_flux_totals.loc[:'2023',('Fram',data_name_list)].plot.bar(color=line_colours,ax=ax[0,0])
+
 ########### code for adding multiyear totals as horizontal lines
 # for i,r in enumerate(winter_flux_totals['Fram'][data_name_list].mean()):
 
@@ -425,6 +499,9 @@ plot_df.plot.bar(color=line_colours,ax=ax[0,0],yerr=err_df)
 
 # ax[0,0].axhline(winter_flux_totals['Fram'][data_name_list].mean()['SnowModel-LG'],color=line_colours[1],alpha=1,dashes=[4, 4],zorder=0,lw=2)
 ########################
+
+
+# winter_flux_totals.loc[:'2023',('Davis',data_name_list)].plot.bar(color=line_colours,ax=ax[1,0])
 
 if add_multiyear_totals_to_fig:
 
@@ -440,6 +517,8 @@ else:
 plot_df.plot.bar(color=line_colours,ax=ax[1,0],yerr=err_df)
 
 
+
+
 ########### code for adding multiyear totals as horizontal lines
 
 # for i,r in enumerate(winter_flux_totals['Davis'][data_name_list].mean()):
@@ -453,10 +532,14 @@ fram_annual_flux_percent.loc[:'2023'].plot.bar(color=line_colours,ax=ax[0,1])
 
 davis_annual_flux_percent.loc[:'2023'].plot.bar(color=line_colours,ax=ax[1,1])
 
-ax[1,0].set_xlabel('Year')
-ax[1,1].set_xlabel('Year')
 
+ax[1,0].set_xlabel('Season')
+ax[1,1].set_xlabel('Season')
 
+add_asterisk_where_zero(ax[0,0])
+add_asterisk_where_zero(ax[0,1])
+add_asterisk_where_zero(ax[1,0])
+add_asterisk_where_zero(ax[1,1])
 
 ax[1,0].legend(data_name_list, loc=(0.1,0.73),ncol=2)
 ax[0,0].get_legend().remove()
@@ -520,11 +603,18 @@ davis_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(davis_ice_flux_uncert)
 fram_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(fram_ice_flux_uncert)
 
 # %%
+winter_flux_totals
+
+# %%
 ############## figure 4: snow and ice freshwater fluxes
 
 ADJUST_SNOW_LIM = True
 ADJUST_ICE_LIM = True
+# if plotting monthly clim; select a single year (ice_clim_all repeats the clim values for the full time series so just subset it)
 
+
+colours2 = line_colours[5:7][::-1]
+colours2 = ['C7','C9']
 colours2 = ['C9','C7']
 
 fig, ax=plt.subplots(2,2,figsize=(10,8),dpi=300,sharex='col',gridspec_kw={'width_ratios': [2, 1]})
@@ -533,12 +623,15 @@ a_snow=0.7
 start_date = '2016-09'
 end_date = '2022-04'
 
-
 ax1 = ax[0,0].twinx()
-####### snow multiproduct mean with uncert, Fram
-fram_snow_fw_multiproduct_mean.plot(label='Snow multi-product mean',ax=ax1,color=colours2[1],style='.-',alpha=a_snow)
-ff.fill_between_err_series(fram_snow_fw_multiproduct_mean.loc[start_date:end_date], fram_snow_fw_multiproduct_std.loc[start_date:end_date],
-                    ax1,color=colours2[1])
+####### snow multiproduct mean with min/max, Fram
+fram_snow_fw_multiproduct_mean.plot(label='Snow multiproduct mean',ax=ax1,color=colours2[1],style='.-',alpha=a_snow)
+# ff.fill_between_err_series(fram_snow_fw_multiproduct_mean.loc[start_date:end_date], fram_snow_fw_multiproduct_std.loc[start_date:end_date],
+#                     ax1,color=colours2[1])
+
+ff.fill_between_err_series_minmax(fram_snow_fw_multiproduct_mean.loc[start_date:end_date], 
+                                   fram_freshwater_volume_flux.loc[:,data_name_list].min(axis=1),
+                                   fram_freshwater_volume_flux.loc[:,data_name_list].max(axis=1), ax1,color=colours2[1])
 ########## fram ice fwf
 fram_freshwater_volume_flux.loc[start_date:end_date,ice_fw_name].plot(label='Sea ice freshwater',style='.-',ax=ax[0,0],color=colours2[0])
 # volume fwf ice uncert
@@ -549,9 +642,10 @@ ff.fill_between_err_series(fram_freshwater_volume_flux.loc[start_date:end_date,i
 
 lines, labels = ax[0,0].get_legend_handles_labels()
 lines2, labels2 = ax1.get_legend_handles_labels()
-ax1.legend(lines + lines2, ['Sea ice freshwater','Snow multi-product mean'], loc=(0.1,0.85),ncol=1)
+ax1.legend(lines + lines2, ['Sea ice freshwater','Snow multiproduct mean'], loc=(0.1,0.85),ncol=1)
+# ax1.legend(lines + lines2, ['Sea ice freshwater','Snow multi-product mean'], loc=(0.1,0.9),ncol=2)
 
-ax1.set_ylabel('Monthly snow freshwater\nvolume flux (km$^3$)', color=colours2[1])
+ax1.set_ylabel('Snow freshwater volume flux (km$^3$)', color=colours2[1])
 
 if ADJUST_ICE_LIM:
     lim0, lim1 = ax[0,0].get_ylim()
@@ -566,13 +660,20 @@ if ADJUST_SNOW_LIM:
     ax1.set_ylim(lim0*upper_lim_1/lim1,upper_lim_1) 
 
 ax2 = ax[1,0].twinx()
-ax2.set_ylabel('Monthly snow freshwater\nvolume flux (km$^3$)', color=colours2[1])
+ax2.set_ylabel('Snow freshwater volume flux (km$^3$)', color=colours2[1])
 
 
 ######### Davis snow fwf multiproduct mean with uncert
-davis_snow_fw_multiproduct_mean.plot(label='Snow multi-product mean',ax=ax2,color=colours2[1],style='.-',alpha=a_snow)
-ff.fill_between_err_series(davis_snow_fw_multiproduct_mean.loc[start_date:end_date], davis_snow_fw_multiproduct_std.loc[start_date:end_date],
-                    ax2,color=colours2[1])
+davis_snow_fw_multiproduct_mean.plot(label='Snow multiproduct mean',ax=ax2,color=colours2[1],style='.-',alpha=a_snow)
+# ff.fill_between_err_series(davis_snow_fw_multiproduct_mean.loc[start_date:end_date], davis_snow_fw_multiproduct_std.loc[start_date:end_date],
+#                     ax2,color=colours2[1])
+# fill_between_err_series(davis_snow_fw_multiproduct_mean.loc[start_date:end_date], davis_snow_fw_multiproduct_std.loc[start_date:end_date],
+#                     ax2,color=colours2[1])
+ff.fill_between_err_series_minmax(davis_snow_fw_multiproduct_mean.loc[start_date:end_date], 
+                                   davis_freshwater_volume_flux.loc[:,data_name_list].min(axis=1),
+                                   davis_freshwater_volume_flux.loc[:,data_name_list].max(axis=1), ax2,color=colours2[1])
+
+
 ######### Davis ice fwf with uncert
 davis_freshwater_volume_flux.loc[start_date:end_date,ice_fw_name].plot(label='Sea ice freshwater',
                                                                        style='.-',ax=ax[1,0],
@@ -600,9 +701,9 @@ ax[1,1].set_ylim(0,750)
 winter_flux_totals.loc[:,('Fram',['Ice freshwater volume flux','Snow freshwater volume flux'])].plot.bar(color=colours2,ax=ax[0,1],stacked=True)
 
 winter_flux_totals.loc[:,('Davis',['Ice freshwater volume flux','Snow freshwater volume flux'])].plot.bar(color=colours2,ax=ax[1,1],stacked=True)
-ax[1,1].set_xlabel('Year')
-ax[1,1].set_ylabel('Davis winter-season ice + snow\nfreshwater volume flux (km$^3$)')
-ax[0,1].set_ylabel('Fram winter-season ice + snow\nfreshwater volume flux (km$^3$)')
+ax[1,1].set_xlabel('Season')
+ax[1,1].set_ylabel('Davis ice + snow freshwater volume flux (km$^3$)')
+ax[0,1].set_ylabel('Fram ice + snow freshwater volume flux (km$^3$)')
 
 add_ax_letter_labels(ax)
 x0,x1 = ax[0,0].get_xlim()
@@ -611,8 +712,19 @@ ax[0,0].set_xlim(x0-1,x1+1)
 ax[1,1].get_legend().remove()
 ax[0,1].get_legend().remove()
 ax[1,0].set_xlabel('Year')
-ax[0,0].set_ylabel('Fram Strait monthly sea ice\nfreshwater volume flux (km$^3$)',color=colours2[0])
-ax[1,0].set_ylabel('Davis Strait monthly sea ice\nfreshwater volume flux (km$^3$)',color=colours2[0])
+ax[0,0].set_ylabel('Fram Strait ice freshwater volume flux (km$^3$)',color=colours2[0])
+ax[1,0].set_ylabel('Davis Strait ice freshwater volume flux (km$^3$)',color=colours2[0])
+
+xtick_label_list = ['2016-\n2017','2017-\n2018','2018-\n2019','2019-\n2020','2020-\n2021','2021-\n2022']
+ax[1,1].set_xticklabels(xtick_label_list)
+# use max min range here instead for uncert?
+
+for container in ax[0,1].containers:
+    ax[0,1].bar_label(container,fmt='%d', label_type='center')
+
+for container in ax[1,1].containers:
+    ax[1,1].bar_label(container,fmt='%d', label_type='center')
+
 plt.tight_layout()
 plt.show()
 
@@ -722,6 +834,8 @@ fram_annual_flux_percent > davis_annual_flux_percent
 
 # %%
 
+# %%
+
 study_year_end = '2022-04'
 with pd.option_context('display.float_format', lambda x: f'{x:,.3f}'):
     print('winter flux total multiyear mean')
@@ -735,6 +849,22 @@ with pd.option_context('display.float_format', lambda x: f'{x:,.3f}'):
     display(df_coeff_var) # coefficient of variation
 
 # %%
+# limited to 2018/19 and 2019/20 seasons
+
+study_year_start = '2018'
+study_year_end = '2019'
+with pd.option_context('display.float_format', lambda x: f'{x:,.3f}'):
+    print('winter flux total multiyear mean 18/19-19/20')
+    df_mean = winter_flux_totals.loc[study_year_start:study_year_end].mean(axis=0)
+    display(df_mean)
+    df_std = winter_flux_totals.loc[study_year_start:study_year_end].std(axis=0)
+    print('winter flux total multiyear std 18/19-19/20')
+    display(df_std)
+    # df_coeff_var = df_std/df_mean
+    # print('winter flux total multiyear coeff of variation')
+    # display(df_coeff_var) # coefficient of variation
+
+# %%
 ##################### winter totals and percentages over all years
 ## more decimal places than needed; need to truncate
 
@@ -744,6 +874,28 @@ print('{:.03f} % of the snow-plus-ice total winter value'.format(fram_snow_perce
 
 print('Davis winter all-year all-product snow fwf mean: {:.03f} +- {:.03f}'.format(davis_mean_winter_allproduct,davis_std_winter_allproduct))
 print('{:.03f} % of the snow-plus-ice total winter value'.format(davis_snow_percent_mean_allseason))
+
+# %%
+# adding ice freshwater flux uncertainties in quadrature
+ice_fwf_uncert_fram_seasonal = np.sqrt((fram_ice_fwf_uncert**2).resample('YS-OCT').sum()) # winter totals added in quadrature
+ice_fwf_uncert_davis_seasonal = np.sqrt((davis_ice_fwf_uncert**2).resample('YS-OCT').sum()) # winter totals added in quadrature
+ice_fwf_uncert_fram_multiyear = np.sqrt((ice_fwf_uncert_fram_seasonal**2).sum())
+ice_fwf_uncert_davis_multiyear = np.sqrt((ice_fwf_uncert_davis_seasonal**2).sum())
+
+# %%
+ice_fwf_uncert_fram_multiyear, ice_fwf_uncert_davis_multiyear
+
+# %%
+print('min/max over different snow products')
+print('fram min',winter_flux_totals.loc[:study_year_end,
+                                                    ('Fram', data_name_list)].mean(axis=0).min())
+print('fram max',winter_flux_totals.loc[:study_year_end,
+                                                    ('Fram', data_name_list)].mean(axis=0).max())
+
+print('davis min',winter_flux_totals.loc[:study_year_end,
+                                                    ('Davis', data_name_list)].mean(axis=0).min())
+print('davis max',winter_flux_totals.loc[:study_year_end,
+                                                    ('Davis', data_name_list)].mean(axis=0).max())
 
 # %%
 # coefficients of variation: standard deviation / mean of multiyear winter flux totals
@@ -772,6 +924,52 @@ winter_flux_totals.loc[:'2021',(slice(None),'Snow freshwater volume flux')].mean
 print('std multiyear multiproduct winter snow FWF up to 2021')
 
 winter_flux_totals.loc[:'2021',(slice(None),'Snow freshwater volume flux')].std()
+
+# %%
+# for specific years 2018-2019, 2019-2020
+
+################ percentages for specific year range where all products are available
+
+fram_mean_winter_allproduct_1819 = winter_flux_totals.loc['2018':'2019',
+                                                    ('Fram', data_name_list)].mean(axis=1).mean()
+fram_std_winter_allproduct_1819 = winter_flux_totals.loc['2018':'2019',
+                                                    ('Fram', data_name_list)].mean(axis=1).std()
+
+davis_mean_winter_allproduct_1819 = winter_flux_totals.loc['2018':'2019',
+                                                    ('Davis', data_name_list)].mean(axis=1).mean()
+davis_std_winter_allproduct_1819 = winter_flux_totals.loc['2018':'2019',
+                                                    ('Davis', data_name_list)].mean(axis=1).std()
+
+
+# sea ice
+
+fram_ice_fw_mean_winter_1819 = winter_flux_totals.loc['2018':'2019',('Fram','Ice freshwater volume flux')].mean()
+davis_ice_fw_mean_winter_1819 = winter_flux_totals.loc['2018':'2019',('Davis','Ice freshwater volume flux')].mean()
+
+fram_snow_percent_mean_allseason_1819 = fram_mean_winter_allproduct_1819*100/(fram_mean_winter_allproduct_1819+fram_ice_fw_mean_winter_1819)
+davis_snow_percent_mean_allseason_1819 = davis_mean_winter_allproduct_1819*100/(davis_mean_winter_allproduct_1819+davis_ice_fw_mean_winter_1819)
+
+# %%
+##################### percentages over 2018-2019
+
+print('Winter snow freshwater fluxes averaged over 2018-2019 and 2019-2020, \nalso expressed as percent of total snow-plus-ice values')
+print('Fram winter 2-season all-product snow fwf mean: {:.03f} +- {:.03f}'.format(fram_mean_winter_allproduct_1819,fram_std_winter_allproduct_1819))
+print('{:.03f} % of the snow-plus-ice total winter value'.format(fram_snow_percent_mean_allseason_1819))
+
+print('Davis winter 2-season all-product snow fwf mean: {:.03f} +- {:.03f}'.format(davis_mean_winter_allproduct_1819,davis_std_winter_allproduct_1819))
+print('{:.03f} % of the snow-plus-ice total winter value'.format(davis_snow_percent_mean_allseason_1819))
+
+# %%
+print('min/max over different snow products 2018-2019')
+print('fram min',winter_flux_totals.loc['2018':'2019',
+                                                    ('Fram', data_name_list)].mean(axis=0).min())
+print('fram max',winter_flux_totals.loc['2018':'2019',
+                                                    ('Fram', data_name_list)].mean(axis=0).max())
+
+print('davis min',winter_flux_totals.loc['2018':'2019',
+                                                    ('Davis', data_name_list)].mean(axis=0).min())
+print('davis max',winter_flux_totals.loc['2018':'2019',
+                                                    ('Davis', data_name_list)].mean(axis=0).max())
 
 # %%
 # are snow fwf more correlated than snow depths (between products) in fram strait? yes if > 0 (excluding diagonal)
@@ -997,5 +1195,7 @@ ax[1].set_ylabel('Davis ice area flux (km$^2$)', color=color_left)
 
 plt.tight_layout()
 plt.show()
+
+# %%
 
 # %%

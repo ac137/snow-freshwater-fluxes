@@ -15,19 +15,28 @@ import pyresample
 # from pyresample.geometry import SwathDefinition
 
 # dataset for destination grid (from NaRRS repository)
-s3_monthly = xr.open_dataset('../s3_snow_data/Gridded_S3_NaRRS_snow_depth_and_sea_ice_thickness_nh_202110.nc')
+s3_monthly = xr.open_dataset('../other_data/s3_snow_data/Gridded_S3_NaRRS_snow_depth_and_sea_ice_thickness_nh_202110.nc')
 
-data_dir_s3a = '../s3_snow_data/*/'
-data_dir_s3b = '../s3_snow_data/S3B/'
+data_dir_s3a = '../other_data/s3_snow_data/*/'
+data_dir_s3b = '../other_data/s3_snow_data/S3B/'
 file_name = 'NaRRS_Sentinel3_snow_depth_and_sea_ice_thickness.nc'
 
 year_range = ['2018', '2019','2020','2021','2022','2023']
 # year_range = ['2018', '2019']
+year_range = ['2016','2017']
 # probably  don't need to hardcode all this but just leaving as-is for now
 # skipping may-september because those dates are absent from the data
 month_range = ['01','02','03','04','10','11','12']
 # month_range = ['10','11','12']
 # month_range = ['01','02','03','04']
+
+# regridding snow depth
+# variable_name = 'snow_depth_01'
+# variable_name_tosave = 'snow_depth'
+
+# regridding snow density
+variable_name = 'snow_density_01'
+variable_name_tosave = 'snow_density'
 
 # area definition from the destination grid dataset
 area_def = pyresample.geometry.AreaDefinition('EASE', 'NSIDC EASE-Grid 2.0', 'EASE', 
@@ -79,8 +88,8 @@ for y in year_range:
 			lons_swath = xr.DataArray(np.array([np.concat([lon_arr_a, lon_arr_b])]), dims=('x', 'y'))
 			lats_swath = xr.DataArray(np.array([np.concat([lat_arr_a, lat_arr_b])]), dims=('x', 'y'))
 
-			s3_sd_a = s3_data_a['snow_depth_01'].loc[year_month_current_with_delim].values
-			s3_sd_b = s3_data_b['snow_depth_01'].loc[year_month_current_with_delim].values
+			s3_sd_a = s3_data_a[variable_name].loc[year_month_current_with_delim].values
+			s3_sd_b = s3_data_b[variable_name].loc[year_month_current_with_delim].values
 			sd_arr_all = np.array([np.concat([s3_sd_a, s3_sd_b])])
 			start_time = s3_data_a['time_01'][0].values
 			print('start time :',start_time) # not strictly accurate but close enough
@@ -100,7 +109,7 @@ for y in year_range:
 			# 
 			lons_swath = xr.DataArray(np.array([s3_data['lon_01'].loc[year_month_current_with_delim].values]), dims=('x', 'y'))
 			lats_swath = xr.DataArray(np.array([s3_data['lat_01'].loc[year_month_current_with_delim].values]), dims=('x', 'y'))
-			sd_arr_all = np.array([s3_data['snow_depth_01'].loc[year_month_current_with_delim].values])
+			sd_arr_all = np.array([s3_data[variable_name].loc[year_month_current_with_delim].values])
 			start_time = s3_data['time_01'][0].values
 
 			print('start time :',start_time)
@@ -115,7 +124,7 @@ for y in year_range:
 		scene = satpy.Scene()
 		# assign snow depth in scene, assign area definitions
 		# need to assign x/y dimensions for the regridding to work even though this is 1d data
-		scene['snow_depth'] = xr.DataArray(
+		scene[variable_name_tosave] = xr.DataArray(
 		    # subset selection for specific year-month
 		    data=sd_arr_all,
 		    dims=('x', 'y'),
@@ -132,8 +141,8 @@ for y in year_range:
 		xr_count_resampled = scene_resampled_count.to_xarray()
 		time_value = pd.to_datetime('{}-01'.format(year_month_current_with_delim))
 		print('saving data')
-		xr_resampled.expand_dims(time=[time_value]).to_netcdf('s3_aggregated/s3_aggregated_snow_depth_{}.nc'.format(year_month_current_with_delim))
-		xr_count_resampled.expand_dims(time=[time_value]).to_netcdf('s3_aggregated/s3_aggregated_snow_depth_count_{}.nc'.format(year_month_current_with_delim))
+		xr_resampled.expand_dims(time=[time_value]).to_netcdf('s3_aggregated/s3_aggregated_{}_{}.nc'.format(variable_name_tosave, year_month_current_with_delim))
+		xr_count_resampled.expand_dims(time=[time_value]).to_netcdf('s3_aggregated/s3_aggregated_{}_count_{}.nc'.format(variable_name_tosave, year_month_current_with_delim))
 		print('saved')
 		# break # for testing
 	# break # for testing

@@ -41,11 +41,11 @@ import shapefile_clipping_helpers as sh
 # values of 20: land-covered grid cell
 # values of 21: ocean-covered grid cell
 
-ice_age = xr.open_mfdataset('../ice_age_nsidc/*.nc/')
+ice_age = xr.open_mfdataset('../other_data/ice_age_nsidc/*.nc/')
 
 # %%
 # nesosim and smlg files
-root_path = r"../NESOSIM/output/100km"
+root_path = r"../snow_modelling/NESOSIM/output/100km"
 year_file = r"final/NESOSIMv11_01092019-31082020.nc"
 configstr = "ERA5CSscaledsfERA5windsNSIDCv4driftsCDRsicrhovariable_IC2_DYN1_WP1_LL1_AL1_WPF5.8e-07_WPT5_LLF2.9e-07-100kmv11"
 
@@ -63,11 +63,11 @@ ds_nomelt = xr.open_dataset(fn_nomelt)
 ds_nomelt['day'] = pd.to_datetime(ds_nomelt['day'],format='%Y%m%d')
 
 # %%
-# LEGOS
-legos_da = xr.open_mfdataset('../SD_LaKu_LEGOS_NH_Carret_and_Fleury/*.nc')
+# LEGOS (carret & fleury)
+legos_da = xr.open_mfdataset('../other_data/SD_LaKu_LEGOS_NH_Carret_and_Fleury/*.nc')
 
 # %%
-# sentinel 3 (carret & fleury)
+# sentinel 3 
 s3_data = xr.open_dataset('s3_aggregated/s3_aggregated_snow_depth_{}.nc'.format('2018-10'))
 
 # %%

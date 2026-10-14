@@ -28,23 +28,23 @@ import os
 import shapefile_clipping_helpers as sc
 
 # %%
-nesosim_da = xr.open_mfdataset('../nesosim_default_data/*.nc')
+nesosim_da = xr.open_mfdataset('../snow_modelling/nesosim_default_data/*.nc')
 
 
 # %%
-smlg_da = xr.open_mfdataset('../SM_snod_ERA5_01Aug1980-31Jul2021_v01.nc')
+smlg_da = xr.open_mfdataset('../SnowModel_data/SM_snod_ERA5_01Aug1980-31Jul2021_v01.nc')
 
 # %%
-smlg_da = xr.open_mfdataset('../SM_snod_MERRA2_01Aug1980-31Jul2021_v01.nc') # for MERRA2
+smlg_da = xr.open_mfdataset('../SnowModel_data/SM_snod_MERRA2_01Aug1980-31Jul2021_v01.nc') # for MERRA2
 
 # %%
-amsr_da = xr.open_dataset('../pmw_amsr2_li_smlg_grid.nc')
+amsr_da = xr.open_dataset('../snow_modelling/model_snow_obs_comparisons/pmw_amsr2_li_smlg_grid.nc')
 
 # %%
-legos_da = xr.open_mfdataset('../SD_LaKu_LEGOS_NH_Carret_and_Fleury/*.nc')
+legos_da = xr.open_mfdataset('../other_data/SD_LaKu_LEGOS_NH_Carret_and_Fleury/*.nc')
 
 # %%
-s3_da = xr.open_mfdataset('./s3_aggregated/s3_aggregated_snow_depth_20*.nc')
+s3_da = xr.open_mfdataset('../snow-freshwater-fluxes/s3_aggregated/s3_aggregated_snow_depth_20*.nc')
 # none of these are less than zero
 
 # %%

@@ -7,13 +7,17 @@
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
 import itertools
+import re
 
 import seaborn as sb
 import scipy.stats as st
 
+
+############ data loading/preprocessing
 
 def load_and_preprocess_ice_flux_data(flux_fn):
     flux_data = pd.read_csv(flux_fn)
@@ -44,13 +48,29 @@ def load_data_into_dict(gate_name_list, data_name_list, file_dataset_list, date_
         data_dict[gate_name] = gate_data_dict
     return(data_dict)
 
+def load_and_adjust_time_index(data_path,single_file=False):
+	'''for landy et al ice thickness data files
+	note: assumes the only 8-digit sequence in the file path is in the filename'''
+	if single_file:
+		data_sit = xr.open_dataset(data_path,decode_times=False)
+		date_list = [pd.to_datetime(re.search(r'\d{8}', data_path)[0])]
+	else:
+		data_sit = xr.open_mfdataset(os.path.join(data_path,'*.nc'),decode_times = False)
+		# change time index according to dates in filenames (formatted as 8-digit long substrings e.g. 20101007)
+		data_file_list = os.listdir(data_dir)
+		data_file_list.sort()
+		date_list = pd.to_datetime([re.search(r'\d{8}', x)[0] for x in data_file_list])
+	data_sit['time'] = date_list
+	return data_sit
+
 ############## freshwater calculations
 
-def calculate_ice_freshwater_flux(volume_flux):
+def calculate_ice_freshwater_flux(volume_flux, dens_ice=901.3, sal_ice=4):
     '''given sea ice volume flux volume_flux, calculate sea ice freshwater volume flux'''
-    sal_ice = 4
+    # sal_ice = 4 # sal_ice could be single value or an array
     sal_ref = 34.8
-    dens_ice = 901.3
+    # dens_ice = 901.3
+	# dens_ice could be single value or an array
     dens_seawater = 1023.9
 
     scale_factor = (1-sal_ice/sal_ref)*(dens_ice/dens_seawater)
@@ -81,6 +101,13 @@ def fill_between_err_series(series, err_series, ax, color):
      make fill-between plot (df and err_df must have same shape)'''
     # for i,c in enumerate(err_df.columns):
     ax.fill_between(series.index, series-err_series, series+err_series, alpha=0.2, color=color)
+
+def fill_between_err_series_minmax(series, err_min,err_max, ax, color):
+    ''' given a series of data and series err_series of data uncertainties (e.g. standard deviation),
+     axes ax, and list of plot colours color,
+     make fill-between plot (df and err_df must have same shape)'''
+    # for i,c in enumerate(err_df.columns):
+    ax.fill_between(series.index, err_min, err_max, alpha=0.2, color=color)
 
 def plot_deseasonal_series(df_deseason, df_clim_std):
     ''' deseasonalized plot for single column of dataframe
@@ -253,6 +280,14 @@ def percent_errprop_gate(data_df, sigma_df, gate_names, data_names, y_name):
                                                   sigma_df[gate][data_names], sigma_df.loc[:,(gate,y_name)]))
     return data_list
 
+
+def calc_rms(x1,x2):
+	'''root-mean-square'''
+	return np.sqrt(np.mean((x1-x2)**2))
+
+def calc_mb(x1,x2):
+	'''mean bias'''
+	return np.mean(x2-x1)
 
 ############# data restructuring/aggregation 
 

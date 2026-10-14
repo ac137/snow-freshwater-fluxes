@@ -37,7 +37,6 @@ import cartopy
 import cartopy.crs as ccrs
 
 import shapefile_clipping_helpers as sc
-import file_paths as fp
 
 # %%
 MASK_OUT_MYI = True
@@ -46,39 +45,9 @@ year = 2016
 # dataset_name = 'smlg-m2'
 # dataset_name = 'legos_sam'
 # dataset_name = 'amsr2'
-# dataset_name = 's3'
-dataset_name = 'nesosim'
+dataset_name = 's3'
+# dataset_name = 'nesosim'
 # dataset_name = 'mw99' # mw99 is experimental - not used
-
-# file paths
-
-# nesosim model output path
-nesosim_model_output_path = ''
-
-# snowmodel-lg (era5) snow depth and density file paths
-smlg_snod_output_path = ''
-
-smlg_sden_output_path = ''
-
-# snowmodel-lg (merra2) snow depth and density file paths
-smlg_m2_snod_output_path = ''
-
-smlg_m2_sden_output_path = ''
-
-# regridded amsr2 (5vlstm) path
-amsr2_li_smlg_grid_path = ''
-
-# path to legos snow depth
-legos_snow_depth_path = ''
-
-
-# path to monthly-aggregated s3/narrs data
-s3_narrs_monthly_path = ''
-
-# path to mw99
-m299_path = ''
-
-
 
 # %%
 def clip_data_in_dict(data_dict, gate_mask_dict):
@@ -117,7 +86,7 @@ def load_and_preprocess_data(data_name):
 
         # load datasets
         # load snow depth/density
-        nesosim_da = xr.open_mfdataset(nesosim_model_output_path)
+        nesosim_da = xr.open_mfdataset('../snow_modelling/nesosim_default_data/*.nc')
         # load salinity
         nesosim_sal = xr.open_dataset('nesosim_snow_salinity_estimate.nc') # taken from snow_salinity_calculation.ipynb
         # load myi fraction
@@ -150,8 +119,8 @@ def load_and_preprocess_data(data_name):
 
     
     elif data_name == 'smlg':
-        smlg_da_snod = xr.open_dataset(smlg_snod_output_path)
-        smlg_da_sden = xr.open_dataset(smlg_sden_output_path)
+        smlg_da_snod = xr.open_dataset('../SnowModel_data/SM_snod_ERA5_01Aug1980-31Jul2021_v01.nc')
+        smlg_da_sden = xr.open_dataset('../SnowModel_data/SM_sden_ERA5_01Aug1980-31Jul2021_v01.nc')
         smlg_sal = xr.open_dataset('smlg_snow_salinity_estimate.nc')
         data_myi_frac = xr.open_dataset('monthly_myi_fraction_SMLG_grid.nc')
 
@@ -169,8 +138,8 @@ def load_and_preprocess_data(data_name):
                       'smlg_salinity':['snow_salinity']
                      }
     elif data_name == 'smlg-m2':
-        smlg_da_snod = xr.open_dataset(smlg_m2_snod_output_path)
-        smlg_da_sden = xr.open_dataset(smlg_m2_sden_output_path)
+        smlg_da_snod = xr.open_dataset('../SnowModel_data/SM_snod_MERRA2_01Aug1980-31Jul2021_v01.nc')
+        smlg_da_sden = xr.open_dataset('../SnowModel_data/SM_sden_MERRA2_01Aug1980-31Jul2021_v01.nc')
         smlg_sal = xr.open_dataset('smlg_snow_salinity_estimate_m2.nc')
         data_myi_frac = xr.open_dataset('monthly_myi_fraction_SMLG_grid.nc')
 
@@ -190,8 +159,8 @@ def load_and_preprocess_data(data_name):
 
     elif data_name =='amsr2':
         # pmw taken from model_snow_obs_comparisons/consolidate_pmw_tif_files.ipynb
-        amsr2_li_smlg_grid = xr.open_dataset(amsr2_li_smlg_grid_path) # li et al data on smlg grid
-        smlg_da_sden = xr.open_dataset(smlg_sden_output_path) # using smlg density
+        amsr2_li_smlg_grid = xr.open_dataset('../snow_modelling/model_snow_obs_comparisons/pmw_amsr2_li_smlg_grid.nc') # li et al data on smlg grid
+        smlg_da_sden = xr.open_dataset('../SnowModel_data/SM_sden_MERRA2_01Aug1980-31Jul2021_v01.nc') # using smlg density
         amsr2_sal = xr.open_dataset('amsr2_li_snow_salinity_estimate.nc') # amsr2 salinity on smlg grid
         # using myi fraction on smlg grid
         data_myi_frac = xr.open_dataset('monthly_myi_fraction_SMLG_grid.nc')
@@ -217,7 +186,7 @@ def load_and_preprocess_data(data_name):
                  'amsr2_smlg_salinity':['snow_salinity']
                  }
     elif data_name == 'legos_sam':
-        legos_data = xr.open_mfdataset(legos_snow_depth_path)
+        legos_data = xr.open_mfdataset('../other_data/SD_LaKu_LEGOS_NH_Carret_and_Fleury/*.nc')
         legos_salinity = xr.open_dataset('legos_sam_snow_salinity_estimate.nc') 
         data_myi_frac = xr.open_dataset('monthly_myi_fraction_legos_grid.nc')
         # rename x/y coords; specific to legos
@@ -256,12 +225,12 @@ def load_and_preprocess_data(data_name):
               'legos_salinity':['snow_salinity']
                          }
     elif data_name == 's3':
-        s3_data = xr.open_mfdataset(s3_narrs_monthly_path)
+        s3_data = xr.open_mfdataset('../snow-freshwater-fluxes/s3_aggregated/s3_aggregated_snow_depth_20*.nc')
         s3_salinity = xr.open_dataset('s3_snow_salinity_estimate.nc') 
         data_myi_frac = xr.open_dataset('monthly_myi_fraction_s3_grid.nc')
-        s3_density = s3_data['snow_depth'].copy()
-        s3_density[:] = 293.33
-        s3_density = s3_density.to_dataset(name='snow_density')
+        s3_density = xr.open_mfdataset('../snow-freshwater-fluxes/s3_aggregated/s3_aggregated_snow_density_20*.nc')
+        # s3_density[:] = 293.33
+        # s3_density = s3_density.to_dataset(name='snow_density')
 
         model_raw_data = {
                   's3_density':s3_density,
@@ -276,7 +245,7 @@ def load_and_preprocess_data(data_name):
         data_name_dict = data_var_dict
     elif data_name == 'mw99':
         # note: would need to manually generate mw99 rather than use the is2 product; data has gaps
-        mw99_data = xr.open_mfdataset(m299_path).sortby('time')
+        mw99_data = xr.open_mfdataset('../IS2SITMOGR4_v4/IS2SITMOGR4_01_*.nc').sortby('time')
         mw99_density = xr.open_dataset('mw99_snow_density_is2_grid.nc') # calculated from test_is2_sitmogr4.ipynb to be interpolated
         mw99_salinity = xr.open_dataset('mw99_snow_salinity_estimate.nc') 
         data_myi_frac = xr.open_dataset('monthly_myi_fraction_is2_grid.nc')
@@ -412,10 +381,29 @@ elif dataset_name == 'mw99':
 
 
 # %%
+# nesosim_gate_masks[0].plot()
+
+# %%
+gate_mask_dict['Fram'].count().values
+
+# %%
+gate_mask_dict['Fram'].plot()
+
+# %%
+gate_mask_dict['Davis'].count().values
+
+# %%
+gate_mask_dict['Davis'].plot()
+
+# %%
+
+# %%
 clipped_data_by_gate = clip_data_in_dict(preprocessed_data_dict, gate_mask_dict)
 print('done clipping')
 
 
+
+# %%
 
 # %%
 # filter out data where snow depth is less than zero
@@ -455,6 +443,7 @@ print('done saving')
 # plots for checking clipping regions, data orientation, etc
 
 ival = 10
+# ival  = 100
 
 preprocessed_data_dict['snow_depth']['snow_depth'][ival].plot(cmap='viridis')
 # plt.imshow(legos_gate_masks[1].values)
@@ -499,3 +488,7 @@ clipped_data_by_gate['Fram']['myi_fraction']['myi_fraction'][10].plot()
 
 clipped_data_by_gate['Davis']['myi_fraction']['myi_fraction'][10].plot()
 plt.show()
+
+# %%
+
+# %%
