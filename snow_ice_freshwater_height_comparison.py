@@ -25,6 +25,8 @@ import scipy.stats as st
 import fwf_helper_functions as ff
 
 # %%
+# TODO: LIMIT TO WINTER SEASON!
+
 # datasets to load, data names for plots, index names
 # smlg driven by merra-2
 file_dataset_list = ['nesosim','smlg-m2','amsr2','legos_sam', 's3']
@@ -202,11 +204,27 @@ snow_fwh_df['Fram']['SnowModel-LG']['2017-04':]
 # %%
 ice_fwh['2017-04':]
 
+
 # %%
-snow_fwh_df.count()
+def select_winter(df):
+    months_winter = [10,11,12,1,2,3,4]
+    return df[df.index.month.isin(months_winter)]
+
+
+# %%
+# LIMIT DATA TO WINTER ONLY
+
+# %%
+snow_fwh_df.count() # counts for all datasets
+
+# %%
+select_winter(snow_fwh_df).count() # FOR WINTER ONLY
 
 # %%
 ice_fwh.count()
+
+# %%
+select_winter(ice_fwh).count() # FOR WINTER ONLY
 
 # %%
 snow_fwh_df['Fram']['NESOSIM'].autocorr()
@@ -265,9 +283,17 @@ ice_fwh.corrwith(snow_fwh_df['Fram'].mean(axis=1))
 ice_fwh.corrwith(snow_fwh_df['Davis'].mean(axis=1))
 
 # %%
+ice_fwh_deseason
+
+# %%
 # ice FWH deseasonalized correlated with snow multiproduct mean
 # for Fram; davis column kept because pandas was giving errors otherwise, use only 'fram' result
 ice_fwh_deseason.corrwith(snow_fwh_deseason['Fram'].mean(axis=1))
+
+# %%
+# WINTER-ONLY ice FWH deseasonalized correlated with snow multiproduct mean
+# for Fram; davis column kept because pandas was giving errors otherwise, use only 'fram' result
+select_winter(ice_fwh_deseason).corrwith(select_winter(snow_fwh_deseason)['Fram'].mean(axis=1))
 
 # %%
 # ice FWH deseasonalized correlated with snow multiproduct mean
@@ -275,8 +301,24 @@ ice_fwh_deseason.corrwith(snow_fwh_deseason['Fram'].mean(axis=1))
 ice_fwh_deseason.corrwith(snow_fwh_deseason['Davis'].mean(axis=1))
 
 # %%
+# WINTER-ONLY ice FWH deseasonalized correlated with snow multiproduct mean
+# for Davis; fram column kept because pandas was giving errors otherwise, use only 'davis' result
+select_winter(ice_fwh_deseason).corrwith(select_winter(snow_fwh_deseason)['Davis'].mean(axis=1))
+
+# %%
+select_winter(snow_fwh_deseason)['Fram'].mean(axis=1).count() # fram count multiproduct winter-only
+
+# %%
+select_winter(snow_fwh_deseason)['Davis'].mean(axis=1).count() # davis count multiproduct winter-only
+
+# %%
 # ice freshwater and snow freshwater correlations in Fram - put these in a supplement
 snow_fwh_deseason['Fram'].corrwith(ice_fwh_deseason['Fram']) 
+
+# %%
+# WINTER ONLY DESEASON CORR FRAM:
+
+select_winter(snow_fwh_deseason)['Fram'].corrwith(select_winter(ice_fwh_deseason)['Fram']) 
 
 # %%
 # ice freshwater and snow freshwater correlations in Davis - put these in a supplement
@@ -284,13 +326,18 @@ snow_fwh_deseason['Fram'].corrwith(ice_fwh_deseason['Fram'])
 snow_fwh_deseason['Davis'].corrwith(ice_fwh_deseason['Davis']) # put these in a supplement
 
 # %%
+# WINTER ONLY DESEASON CORR DAVIS:
+
+select_winter(snow_fwh_deseason)['Davis'].corrwith(select_winter(ice_fwh_deseason)['Davis']) 
+
+# %%
 # excluding NESOSIM
 ice_fwh_deseason.corrwith(snow_fwh_deseason['Fram'][['SnowModel-LG','5VLSTM','LEGOS','NaRRS']].mean(axis=1))
 
 # %%
-snow_fwh_deseason['Fram'].count()
+select_winter(snow_fwh_deseason)['Fram'].count()
 
 # %%
-snow_fwh_deseason['Davis'].count()
+select_winter(snow_fwh_deseason)['Davis'].count()
 
 # %%

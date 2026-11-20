@@ -416,16 +416,47 @@ fram_snow_percent_mean_winter
 davis_snow_percent_mean_winter
 
 # %%
+fram_winter_flux_totals['snow'].loc[:'2020']
+
+# %%
 # fram_snow_percent_mean_winter.plot.bar()
 # davis_snow_percent_mean_winter.plot.bar(ax=plt.gca(),color='C2')
 # plt.title('Fram (blue) and Davis (green) Strait wintertime\nsnow freshwater fluxes from Oct 2016-Apr 2022')
 # plt.show()
 
 # %%
-fram_snow_percent_mean_winter.mean()
+winter_mean_fram_snow_allproduct = fram_winter_flux_totals['snow'].mean(axis=1).mean()
+winter_mean_fram_ice_allproduct = fram_winter_flux_totals['ice'].mean(axis=1).mean()
+winter_mean_davis_snow_allproduct = davis_winter_flux_totals['snow'].mean(axis=1).mean()
+winter_mean_davis_ice_allproduct = davis_winter_flux_totals['ice'].mean(axis=1).mean()
 
 # %%
-davis_snow_percent_mean_winter.mean()
+fram_snow_percent_mean_winter_1val = winter_mean_fram_snow_allproduct*100/(winter_mean_fram_snow_allproduct+winter_mean_fram_ice_allproduct)
+davis_snow_percent_mean_winter_1val = winter_mean_davis_snow_allproduct*100/(winter_mean_davis_snow_allproduct+winter_mean_davis_ice_allproduct)
+
+# %%
+fram_snow_percent_mean_winter_1val
+
+# %%
+davis_snow_percent_mean_winter_1val
+
+# %%
+# do this now for only the 2016/17-2020/21 season:
+
+winter_mean_fram_snow_allproduct_20 = fram_winter_flux_totals['snow'].loc[:'2020'].mean(axis=1).mean()
+winter_mean_fram_ice_allproduct_20 = fram_winter_flux_totals['ice'].loc[:'2020'].mean(axis=1).mean()
+winter_mean_davis_snow_allproduct_20 = davis_winter_flux_totals['snow'].loc[:'2020'].mean(axis=1).mean()
+winter_mean_davis_ice_allproduct_20 = davis_winter_flux_totals['ice'].loc[:'2020'].mean(axis=1).mean()
+
+# %%
+fram_snow_percent_mean_winter_1val_20 = winter_mean_fram_snow_allproduct_20*100/(winter_mean_fram_snow_allproduct_20+winter_mean_fram_ice_allproduct_20)
+davis_snow_percent_mean_winter_1val_20 = winter_mean_davis_snow_allproduct_20*100/(winter_mean_davis_snow_allproduct_20+winter_mean_davis_ice_allproduct_20)
+
+# %%
+fram_snow_percent_mean_winter_1val_20
+
+# %%
+davis_snow_percent_mean_winter_1val_20
 
 # %%
 # try manual scaling

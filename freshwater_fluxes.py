@@ -55,7 +55,7 @@ months_ordered = [10,11,12,1,2,3,4]
 mon_names = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr']
 
 # if True, saves calculated data as csv files in calculated_fluxes subdirectory
-SAVE_OUTPUT_DATA = False
+SAVE_OUTPUT_DATA = True
 
 # %%
 # load and preprocess ice flux data
@@ -208,12 +208,23 @@ fram_annual_flux_percent_sigma, davis_annual_flux_percent_sigma = ff.percent_err
 
 # %%
 # sea ice volume flux uncertainties derived from SIT uncert
-davis_ice_flux_uncert = (davis_ice_flux_data['Volume Flux']*davis_ice_flux_data['SIT_sigma']/davis_ice_flux_data['SIT']).abs()
-fram_ice_flux_uncert = (fram_ice_flux_data['VF']*fram_ice_flux_data['SIT-sigma']/fram_ice_flux_data['SIT']).abs()
+# davis_ice_flux_uncert = (davis_ice_flux_data['Volume Flux']*davis_ice_flux_data['SIT_sigma']/davis_ice_flux_data['SIT']).abs()
+# fram_ice_flux_uncert = (fram_ice_flux_data['VF']*fram_ice_flux_data['SIT-sigma']/fram_ice_flux_data['SIT']).abs()
+
+# sea ice volume flux uncertainties obtained from previously calculated values for volume flux product
+fram_ice_flux_data['uncert_vf'] = 39
+davis_ice_flux_data['uncert_vf'] = 26
 
 # sea ice fwf uncert
-davis_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(davis_ice_flux_uncert)
-fram_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(fram_ice_flux_uncert)
+# davis_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(davis_ice_flux_uncert)
+# fram_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(fram_ice_flux_uncert)
+
+davis_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(davis_ice_flux_data['uncert_vf'],
+                                                                dens_ice = sea_ice_density_data['Davis']['sea_ice_density'].loc['2016-10':'2022-04'],
+                                                               sal_ice = salinity_davis).to_frame(ice_fw_name).loc[:final_date]
+fram_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(fram_ice_flux_data['uncert_vf'],
+                                                               dens_ice = sea_ice_density_data['Fram']['sea_ice_density'].loc['2016-10':],
+                                                              sal_ice = salinity_fram).to_frame(ice_fw_name).loc[:final_date]
 
 # %%
 # trend calculations (not used in manuscript since no snow fwf trends present)
@@ -594,16 +605,20 @@ winter_flux_totals[('Davis','Snow freshwater volume flux')] = winter_flux_totals
 
 # need to compare fram_mean_winter_allproduct vs winter_flux_totals 'Snow freshwater volume flux' -> these are consistent
 
-# sea ice volume flux uncertainties
-davis_ice_flux_uncert = (davis_ice_flux_data['Volume Flux']*davis_ice_flux_data['SIT_sigma']/davis_ice_flux_data['SIT']).abs()
-fram_ice_flux_uncert = (fram_ice_flux_data['VF']*fram_ice_flux_data['SIT-sigma']/fram_ice_flux_data['SIT']).abs()
+# sea ice volume flux uncertainties - OUTDATED
+# davis_ice_flux_uncert = (davis_ice_flux_data['Volume Flux']*davis_ice_flux_data['SIT_sigma']/davis_ice_flux_data['SIT']).abs()
+# fram_ice_flux_uncert = (fram_ice_flux_data['VF']*fram_ice_flux_data['SIT-sigma']/fram_ice_flux_data['SIT']).abs()
 
-# sea ice fwf uncert
-davis_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(davis_ice_flux_uncert)
-fram_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(fram_ice_flux_uncert)
+# # sea ice fwf uncert
+# davis_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(davis_ice_flux_uncert)
+# fram_ice_fwf_uncert = ff.calculate_ice_freshwater_flux(fram_ice_flux_uncert)
 
 # %%
 winter_flux_totals
+
+# %%
+fram_ice_fwf_uncert = fram_ice_fwf_uncert['Ice freshwater volume flux']
+davis_ice_fwf_uncert = davis_ice_fwf_uncert['Ice freshwater volume flux']
 
 # %%
 ############## figure 4: snow and ice freshwater fluxes
@@ -730,7 +745,7 @@ plt.show()
 
 # %%
 ########## save output
-
+SAVE_OUTPUT_DATA = False
 if SAVE_OUTPUT_DATA:
     # save monthly gate-average snow depths with uncertainty
     gate_snow_depths.to_csv('calculated_fluxes/fram_davis_monthly_gate_averaged_snow_depth.csv')
@@ -876,14 +891,23 @@ print('Davis winter all-year all-product snow fwf mean: {:.03f} +- {:.03f}'.form
 print('{:.03f} % of the snow-plus-ice total winter value'.format(davis_snow_percent_mean_allseason))
 
 # %%
-# adding ice freshwater flux uncertainties in quadrature
-ice_fwf_uncert_fram_seasonal = np.sqrt((fram_ice_fwf_uncert**2).resample('YS-OCT').sum()) # winter totals added in quadrature
-ice_fwf_uncert_davis_seasonal = np.sqrt((davis_ice_fwf_uncert**2).resample('YS-OCT').sum()) # winter totals added in quadrature
-ice_fwf_uncert_fram_multiyear = np.sqrt((ice_fwf_uncert_fram_seasonal**2).sum())
-ice_fwf_uncert_davis_multiyear = np.sqrt((ice_fwf_uncert_davis_seasonal**2).sum())
+fram_ice_fwf_uncert#_winter
 
 # %%
-ice_fwf_uncert_fram_multiyear, ice_fwf_uncert_davis_multiyear
+# winter uncertainties in freshwater flux
+winter_month_nums = [10,11,12,1,2,3,4]
+fram_ice_fwf_uncert_winter = fram_ice_fwf_uncert[fram_ice_fwf_uncert.index.month.isin(winter_month_nums)]
+davis_ice_fwf_uncert_winter = davis_ice_fwf_uncert[davis_ice_fwf_uncert.index.month.isin(winter_month_nums)]
+
+# %%
+# adding ice freshwater flux uncertainties in quadrature
+ice_fwf_uncert_fram_seasonal = np.sqrt((fram_ice_fwf_uncert_winter**2).resample('YS-OCT').sum()) # winter totals added in quadrature
+ice_fwf_uncert_davis_seasonal = np.sqrt((davis_ice_fwf_uncert_winter**2).resample('YS-OCT').sum()) # winter totals added in quadrature
+ice_fwf_uncert_fram_multiyear = np.sqrt((ice_fwf_uncert_fram_seasonal**2).sum())/len(ice_fwf_uncert_fram_seasonal) # divide by numerator in multiseason average
+ice_fwf_uncert_davis_multiyear = np.sqrt((ice_fwf_uncert_davis_seasonal**2).sum())/len(ice_fwf_uncert_davis_seasonal) # divide by numerator in multiseason average
+
+# %%
+ice_fwf_uncert_fram_multiyear, ice_fwf_uncert_davis_multiyear # sea ice freshwater flux uncertainties in multiyear average
 
 # %%
 print('min/max over different snow products')

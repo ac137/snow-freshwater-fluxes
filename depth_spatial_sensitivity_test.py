@@ -210,7 +210,7 @@ for i, pn in enumerate(product_list):
         fwf_current = fwf_estimates_all[pn][strait]
         # print(fwf_current)
         fwf_current[1].loc[:'2022-04'].plot(ax=ax[j],color=line_colours[i])
-        ax[j].fill_between(fwf_current[1].loc[:'2022-04'].index,fwf_current[0].loc[:'2022-04'],fwf_current[2].loc[:'2022-04'],color=line_colours[i],alpha=0.2)
+        ax[j].fill_between(fwf_current[1].loc[:'2022-04'].index,fwf_current[0].loc[:'2022-04'],fwf_current[2].loc[:'2022-04'],color=line_colours[i],alpha=0.3)
         # for k in range(len(fwf_current)):
         #     fwf_current[k].plot(ax=ax[j],color=line_colours[i])
         # break
@@ -436,7 +436,7 @@ swe_total_min_q_max = [#data_clipped_fram['snow_depth'].min(dim=['x','y']).resam
 
                        data_clipped_fram['snow_depth'].quantile(0.75,dim=['x','y']).resample({time_var:'MS'}).mean()]
                        # data_clipped_fram['snow_depth'].max(dim=['x','y']).resample(time='MS').mean()]
-                       
+
 
 # %%
 
