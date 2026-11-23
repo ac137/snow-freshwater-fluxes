@@ -339,7 +339,7 @@ alpha_shading = 0.5
 fig,ax = plt.subplots(2,1,figsize=(9,5),dpi=300,sharex=True) # for paper
 # fig,ax = plt.subplots(2,1,figsize=(8,8),dpi=300,sharex=True) # for presentation
 
-mean_fram_snow.plot(color=line_colours[5],ax=ax[0])
+mean_fram_snow.plot(color=line_colours[5],ax=ax[0],label='Average')
 
 
 gate_snow_depths['Fram'].plot(ax=ax[0],style='.-',color=line_colours,zorder=4)
@@ -348,7 +348,7 @@ gate_snow_depths['Fram'].plot(ax=ax[0],style='.-',color=line_colours,zorder=4)
 ax[0].fill_between(gate_snow_depths['Fram'].index, mean_fram_snow - std_fram_snow, mean_fram_snow + std_fram_snow,
                   color = line_colours[5],alpha=alpha_shading,zorder=-1)
 
-mean_davis_snow.plot(color=line_colours[5],ax=ax[1])
+mean_davis_snow.plot(color=line_colours[5],ax=ax[1],label='Average')
 
 
 gate_snow_depths['Davis'].plot(ax=ax[1],style='.-',color=line_colours)
@@ -371,13 +371,14 @@ ax[1].text(text_xpos, text_ypos, 'c)',
 
 ax[1].get_legend().remove()
 
-ax[0].legend(ncol=3,loc=(0.3,0.75))#,loc='upper center')
+ax[0].legend(ncol=3,loc=(0.29,0.75))#,loc='upper center')
 # ax[0].legend(ncol=2) # for presentation
 
 
 x0,x1 = ax[0].get_xlim()
 ax[0].set_xlim(x0-1,x1+1)
 plt.tight_layout()
+plt.savefig('fig1_bc.pdf')
 plt.show()
 
 # %%
@@ -434,6 +435,7 @@ ax[1,1].set_xticklabels(mon_names)
 x0,x1 = ax[0,0].get_xlim()
 ax[0,0].set_xlim(x0-1,x1+1)
 plt.tight_layout()
+plt.savefig('Figure02.pdf')
 plt.show()
 
 # %%
@@ -576,6 +578,7 @@ if add_multiyear_totals_to_fig:
     ax[1,0].axvline(5.5,color='#777777',ls='--',lw=1)
 # t = ax[1,0].get_xticks()
 plt.tight_layout()
+plt.savefig('Figure03.pdf')
 plt.show()
 
 # %%
@@ -741,6 +744,7 @@ for container in ax[1,1].containers:
     ax[1,1].bar_label(container,fmt='%d', label_type='center')
 
 plt.tight_layout()
+plt.savefig('Figure04.pdf')
 plt.show()
 
 # %%
