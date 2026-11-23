@@ -28,7 +28,7 @@ Data processing scripts may need adjustments for file path locations (especially
 
 Sea ice fluxes from the RADARSAT Constellation Mission and Sentinel-1 (Howell et al., 2022): https://catalogue.ec.gc.ca/geonetwork/srv/api/records/09ab22c4-e211-4d23-afe6-9e7aa6831c62
 
-Ice volume flux calculated in the above using Landy et al. (2022) year-round sea ice thickness data: https://data.bas.ac.uk/full-record.php?id=GB/NERC/BAS/PDC/01613
+Ice volume flux calculated in the above using version 2.0 of the Landy et al. (2022) year-round sea ice thickness data (Landy et al., 2026): https://data.npolar.no/dataset/6581f94e-d88d-4237-a555-712d19b1e527
 
 Snow datasets used (article references + dataset doi):
 - NESOSIM: NASA Eulerian Snow On Sea Ice Model, v1.1 (Petty et al., 2018): https://zenodo.org/records/18273881
@@ -150,6 +150,8 @@ Carret, A., & Fleury, S. (2024). Multi-frequency altimetry snow depth product ov
 Carret, A., Fleury, S., Di Bella, A., Landy, J., Lawrence, I., Kurtz, N., Laforge, A., Bouffard, J., & Parrinello, T. (2025). A multi-frequency altimetry snow depth product over Arctic sea ice. *Scientific Data*, 12(1), 104. https://doi.org/10.1038/s41597-024-04343-4 
 
 Howell, S. E. L., Brady, M., & Komarov, A. S. (2022). Generating large-scale sea ice motion from Sentinel-1 and the RADARSAT Constellation Mission using the Environment and Climate Change Canada automated sea ice tracking system. *The Cryosphere*, 16(3), 1125–1139. https://doi.org/10.5194/tc-16-1125-2022 
+
+Landy, J., Braakmann-Folgmann, A., & Salganik, E. (2026). Year-round Arctic sea ice thickness from CryoSat-2 Baseline-E observations 2010-2025, V2 \[Dataset\]. Norwegian Polar Institute. https://doi.org/10.21334/NPOLAR.2026.6581F94E
 
 Landy, J. C., Dawson, G. J., Tsamados, M., Bushuk, M., Stroeve, J. C., Howell, S. E. L., Krumpen, T., Babb, D. G., Komarov, A. S., Heorton, H. D. B. S., Belter, H. J., & Aksenov, Y. (2022). A year-round satellite sea-ice thickness record from CryoSat-2. *Nature*, 609(7927). https://doi.org/10.1038/s41586-022-05058-5
 
