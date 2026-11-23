@@ -675,7 +675,11 @@ if ADJUST_SNOW_LIM:
     lim0, lim1 = ax1.get_ylim()
     # # scale y limits so there's more space on top but so they line up at the bottom still
     upper_lim_1 = 80
-    ax1.set_ylim(lim0*upper_lim_1/lim1,upper_lim_1) 
+    # ax1.set_ylim((lim0-3.7)*upper_lim_1/lim1,upper_lim_1) 
+    ice_lim_0, ice_lim_1 = ax[0,0].get_ylim()
+    # ice_lim_frac_below = ice_lim_0/(ice_lim_1-ice_lim_0)
+    lower_lim_val = upper_lim_1*ice_lim_0/ice_lim_1
+    ax1.set_ylim(lower_lim_val, upper_lim_1)
 
 ax2 = ax[1,0].twinx()
 ax2.set_ylabel('Snow freshwater volume flux (km$^3$)', color=colours2[1])
@@ -707,10 +711,16 @@ if ADJUST_ICE_LIM:
     ax[1,0].set_ylim(lim0*upper_lim_1/lim1,upper_lim_1) 
 
 if ADJUST_SNOW_LIM:
+    ice_lim_0, ice_lim_1 = ax[1,0].get_ylim()
+    # ice_lim_frac_below = ice_lim_0/(ice_lim_1-ice_lim_0)
+    # ice_lim_below = 
+    # print(ice_lim_0)
     lim0, lim1 = ax2.get_ylim()
     # # scale y limits so there's more space on top but so they line up at the bottom still
     upper_lim_1 = 30
-    ax2.set_ylim(lim0*upper_lim_1/lim1,upper_lim_1) 
+    lower_lim_val = upper_lim_1*ice_lim_0/ice_lim_1
+    # ax2.set_ylim(lim0*upper_lim_1/lim1 + lower_lim_frac_diff,upper_lim_1) 
+    ax2.set_ylim(lower_lim_val, upper_lim_1)
 
 ax[0,1].set_ylim(0,1300)
 
